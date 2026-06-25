@@ -1,0 +1,157 @@
+// Lummina Studio — database schema
+// Run `npx prisma migrate dev --name init` after setting DATABASE_URL in .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Tier {
+  free
+  atelier
+  master
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum PaymentProvider {
+  payfast
+  stripe
+}
+
+enum PaymentStatus {
+  pending
+  complete
+  failed
+  cancelled
+}
+
+enum AnalysisStatus {
+  pending
+  complete
+  failed
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  tier         Tier      @default(free)
+  role         Role      @default(user)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  portfolioItems PortfolioItem[]
+  payments       Payment[]
+  analyses       Analysis[]
+
+  // Tracks free-tier monthly analysis usage; reset by a scheduled job or
+  // checked against createdAt + 1 month in the analysis route.
+  analysesUsedThisPeriod Int      @default(0)
+  periodResetAt          DateTime @default(now())
+
+  // Email verification
+  emailVerifiedAt        DateTime?
+  emailVerifyToken       String?  @unique
+
+  // Password reset
+  passwordResetToken     String?  @unique
+  passwordResetExpiresAt DateTime?
+
+  // Incremented on password reset so existing JWTs are rejected by
+  // requireAuth without changing the secret. One integer compare is
+  // cheaper than a DB migration.
+  tokenVersion           Int      @default(0)
+
+  @@map("users")
+}
+
+model PortfolioItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  skillTier String   // 'beginner' | 'intermediate' | 'master' — analysis depth, distinct from User.tier
+  scores    Json      // e.g. { "value": "A", "composition": "A-", "edges": "B+" }
+  thumbnail String?   // URL or storage key for the uploaded reference image
+
+  // Source image reference (Phase 2): the original uploaded portrait is
+  // stored in object storage (Supabase / local). We keep the storage key
+  // (stable) and cache a signed URL that the frontend can load directly.
+  sourceImageKey  String?
+  sourceImageUrl  String?
+
+  createdAt DateTime @default(now())
+
+  analyses Analysis[]
+
+  @@index([userId])
+  @@map("portfolio_items")
+}
+
+model Payment {
+  id              Int             @id @default(autoincrement())
+  userId          Int
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        PaymentProvider
+  providerRef     String          // PayFast pf_payment_id, or Stripe payment_intent id
+  planPurchased   Tier
+  amountUsd       Decimal         @db.Decimal(10, 2)
+  amountCharged   Decimal         @db.Decimal(10, 2) // actual amount charged, in chargedCurrency
+  chargedCurrency String          // 'ZAR' or 'USD'
+  status          PaymentStatus   @default(pending)
+  rawPayload      Json?           // store the provider's raw webhook payload for audit/debugging
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([providerRef])
+  @@map("payments")
+}
+
+// An Analysis is the honest, reproducible result of running the CV pipeline
+// (and optionally the LLM interpreter) over an uploaded portrait. Kept as
+// its own table so a re-analysis creates a new row instead of mutating the
+// original — this preserves a full audit trail and lets the user compare
+// analyses over time.
+//
+// cvPayload  — every numeric value the CV layer measured (grades, %, palette,
+//              edge distribution, composition scores). Deterministic per image.
+// llmPayload — the interpreted prose (critique blocks, mentor notes, style
+//              matches, glazing plan). NULL if the LLM call failed or was
+//              disabled; the frontend falls back to templated text.
+// provenance — a per-field "where did this number come from" block, surfaced
+//              in the UI as "How we measured this". The honesty contract.
+model Analysis {
+  id              Int            @id @default(autoincrement())
+  userId          Int
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portfolioItemId Int?
+  portfolioItem   PortfolioItem? @relation(fields: [portfolioItemId], references: [id], onDelete: SetNull)
+
+  // The source image this analysis was run against. Stored as a storage key
+  // so the row is meaningful even after the signed URL expires.
+  sourceImageKey String
+  imageHash      String   // sha256 of normalized bytes — cache key + dedupe
+
+  status    AnalysisStatus @default(pending)
+  cvPayload Json?           // measured values
+  llmPayload Json?          // interpreted prose
+  provenance Json?          // how each number was derived
+  error     String?         // populated when status = failed
+
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([userId])
+  @@index([imageHash])
+  @@map("analyses")
+}
