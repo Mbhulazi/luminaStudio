@@ -5,10 +5,10 @@
 #   1. Push this file (it lives at the repo root so Render can find it).
 #   2. Render → New → Blueprint → pick this repo. Render reads this file and
 #      creates the service for you — no manual form-filling.
-#   3. SECRETS: env vars marked "sync: false" below are placeholders you must
-#      set in Render's dashboard (Environment) BEFORE the first deploy. They
-#      are NOT in this file because secrets must never live in git. The full
-#      template with every var is lumina-backend/.env.production.
+#   3. SECRETS: secrets are managed in Doppler (see SECRETS.md). The backend
+#      fetches them at boot via `doppler run`. The ONLY secret you set directly
+#      on Render is DOPPLER_TOKEN (a Doppler service token for the prd config).
+#      Never put real secrets in this committed file.
 #
 # This defines ONLY the backend. The frontend deploys to Vercel separately.
 
@@ -23,85 +23,15 @@ services:
     # Node 18+ is required (package.json engines). Render honours .nvmrc /
     # package.json engines automatically; pin explicitly if you prefer:
     # nodeVersion: 20.x
-    buildCommand: npm install && npx prisma generate
-    startCommand: node src/server.js
+    # Build: install deps, generate the Prisma client, and install the Doppler
+    # CLI (used by startCommand to fetch secrets at boot).
+    buildCommand: npm install && npx prisma generate && (curl -Ls https://doppler.com/install.sh | sh)
+    startCommand: doppler run --token "$DOPPLER_TOKEN" --project lummina-studio --config prd -- node src/server.js
     healthCheckPath: /ready
     autoDeploy: true
     # ── Environment variables ──
-    # Non-secret values are set here. Secrets (marked below) are set in Render's
-    # dashboard — never put real secrets in this committed file.
+    # Only DOPPLER_TOKEN is set on Render directly. Everything else comes from
+    # Doppler at boot via `doppler run`. Never put real secrets here.
     envVars:
-      # --- Server ---
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 4000
-      - key: LOG_LEVEL
-        value: info
-      - key: CORS_ORIGIN
-        sync: false             # SECRET-ish: your real frontend URL — set in dashboard
-      - key: APP_BASE_URL
-        sync: false             # your real frontend URL — set in dashboard
-      # --- Database (Supabase) ---
-      - key: DATABASE_URL
-        sync: false             # SECRET: full Supabase connection string — set in dashboard
-      # --- Auth ---
-      - key: JWT_SECRET
-        sync: false             # SECRET: generate with `openssl rand -hex 32`
-      - key: JWT_EXPIRES_IN
-        value: 7d
-      - key: BCRYPT_SALT_ROUNDS
-        value: "12"
-      # --- Currency ---
-      - key: USD_TO_ZAR_FALLBACK_RATE
-        value: "18.50"
-      # --- PayFast ---
-      - key: PAYFAST_MODE
-        value: sandbox          # flip to 'live' only after sandbox testing
-      - key: PAYFAST_MERCHANT_ID
-        sync: false             # SECRET (live creds when you go live)
-      - key: PAYFAST_MERCHANT_KEY
-        sync: false             # SECRET
-      - key: PAYFAST_PASSPHRASE
-        sync: false             # SECRET: must match the PayFast dashboard
-      - key: PAYFAST_RETURN_URL
-        sync: false             # your frontend /checkout URL
-      - key: PAYFAST_CANCEL_URL
-        sync: false             # your frontend /checkout URL
-      - key: PAYFAST_NOTIFY_URL
-        sync: false             # https://<this-service>.onrender.com/api/payments/payfast/itn
-      - key: PAYFAST_IP_TTL_MS
-        value: "21600000"
-      # --- Transactional email ---
-      - key: EMAIL_DRIVER
-        value: smtp             # must NOT be 'log' in production
-      - key: EMAIL_FROM_NAME
-        value: Lummina Studio
-      - key: EMAIL_FROM_ADDRESS
-        sync: false             # your sender address
-      - key: SMTP_HOST
-        sync: false             # your SMTP provider host
-      - key: SMTP_PORT
-        value: "587"
-      - key: SMTP_SECURE
-        value: "false"
-      - key: SMTP_USER
-        sync: false             # SECRET-ish
-      - key: SMTP_PASS
-        sync: false             # SECRET
-      # --- Image storage (Supabase) ---
-      - key: STORAGE_DRIVER
-        value: supabase         # production uses Supabase, not local disk
-      - key: SUPABASE_URL
-        sync: false             # your Supabase project URL
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false             # SECRET: service-role key (full access) — never the anon key
-      - key: SUPABASE_STORAGE_BUCKET
-        value: portraits
-      # --- LLM ---
-      - key: LLM_DRIVER
-        value: template         # offline deterministic fallback (recommended for launch)
-      - key: LLM_MAX_COST_CENTS
-        value: "50"
-      - key: IS_TEST
-        value: "false"
+      - key: DOPPLER_TOKEN
+        sync: false            # SECRET: the Doppler service token for prd config
