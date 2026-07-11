@@ -1,0 +1,55 @@
+{
+  "$schema": "https://docs.doppler.com/public/schema.json",
+  "project": "lummina-studio",
+  "configs": {
+    "prod": {
+      "name": "Production (Render backend)",
+      "environment": "Production",
+      "info": "All secrets for the deployed backend. Sourced from Doppler at boot — no plaintext .env in production. The Render integration auto-syncs these into Render's own env-var store so the app boots as normal."
+    },
+    "dev": {
+      "name": "Local development",
+      "environment": "Development",
+      "info": "Local-only values (sandbox PayFast, EMAIL_DRIVER=log, DATABASE_URL=local Supabase). These are NOT secret-sensitive and exist mainly so `doppler run -- npm run dev` works without a separate .env file."
+    }
+  },
+  "secrets": {
+    "PORT":             { "type": "string", "value": "4000",                              "configs": ["prod", "dev"] },
+    "NODE_ENV":         { "type": "string", "value": "production",                        "configs": ["prod"] },
+    "CORS_ORIGIN":      { "type": "string", "value": "<frontend-url>",                    "configs": ["prod"] },
+    "APP_BASE_URL":     { "type": "string", "value": "<frontend-url>",                    "configs": ["prod"] },
+    "LOG_LEVEL":        { "type": "string", "value": "info",                              "configs": ["prod"] },
+
+    "DATABASE_URL":     { "type": "restricted", "rotate": "supabase",                     "configs": ["prod", "dev"] },
+    "JWT_SECRET":       { "type": "restricted", "rotate": "doppler",                      "configs": ["prod"] },
+    "JWT_EXPIRES_IN":   { "type": "string", "value": "7d",                                "configs": ["prod"] },
+    "BCRYPT_SALT_ROUNDS": { "type": "string", "value": "12",                              "configs": ["prod"] },
+
+    "PAYFAST_MODE":           { "type": "string",     "value": "live",                    "configs": ["prod"] },
+    "PAYFAST_MERCHANT_ID":    { "type": "restricted", "rotate": "payfast",                "configs": ["prod"] },
+    "PAYFAST_MERCHANT_KEY":   { "type": "restricted", "rotate": "payfast",                "configs": ["prod"] },
+    "PAYFAST_PASSPHRASE":     { "type": "restricted", "rotate": "payfast",                "configs": ["prod"] },
+    "PAYFAST_RETURN_URL":     { "type": "string",     "value": "<frontend-url>/checkout?status=success",   "configs": ["prod"] },
+    "PAYFAST_CANCEL_URL":     { "type": "string",     "value": "<frontend-url>/checkout?status=cancelled","configs": ["prod"] },
+    "PAYFAST_NOTIFY_URL":     { "type": "string",     "value": "<backend-url>/api/payments/payfast/itn",  "configs": ["prod"] },
+    "PAYFAST_IP_TTL_MS":      { "type": "string",     "value": "21600000",                "configs": ["prod"] },
+
+    "EMAIL_DRIVER":      { "type": "string",     "value": "smtp",                        "configs": ["prod"] },
+    "EMAIL_FROM_NAME":   { "type": "string",     "value": "Lummina Studio",              "configs": ["prod"] },
+    "EMAIL_FROM_ADDRESS":{ "type": "string",     "value": "<no-reply@your-domain>",      "configs": ["prod"] },
+    "SMTP_HOST":         { "type": "restricted",                                         "configs": ["prod"] },
+    "SMTP_PORT":         { "type": "string",     "value": "587",                         "configs": ["prod"] },
+    "SMTP_SECURE":       { "type": "string",     "value": "false",                       "configs": ["prod"] },
+    "SMTP_USER":         { "type": "restricted", "rotate": "smtp",                       "configs": ["prod"] },
+    "SMTP_PASS":         { "type": "restricted", "rotate": "smtp",                       "configs": ["prod"] },
+
+    "STORAGE_DRIVER":          { "type": "string", "value": "supabase",                  "configs": ["prod"] },
+    "SUPABASE_URL":            { "type": "restricted", "rotate": "supabase",             "configs": ["prod"] },
+    "SUPABASE_SERVICE_ROLE_KEY": { "type": "restricted", "rotate": "supabase",           "configs": ["prod"] },
+    "SUPABASE_STORAGE_BUCKET": { "type": "string", "value": "portraits",                 "configs": ["prod"] },
+
+    "LLM_DRIVER":        { "type": "string", "value": "template",                        "configs": ["prod"] },
+    "LLM_MAX_COST_CENTS":{ "type": "string", "value": "50",                              "configs": ["prod"] },
+    "USD_TO_ZAR_FALLBACK_RATE": { "type": "string", "value": "18.50",                    "configs": ["prod"] }
+  }
+}

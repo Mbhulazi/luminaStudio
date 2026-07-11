@@ -45,6 +45,13 @@ yarn-error.log*
 *.key
 secrets/
 
+# ── Secrets-manager workflow artifacts (NEVER commit) ──
+# Pre-scrub backups from scrub-secrets.sh still hold real secret values.
+*.pre-scrub.*.bak
+**/*.pre-scrub.*.bak
+# Doppler local token cache (written by `doppler login`)
+.doppler/
+
 # ── Uploaded user content (portraits) — private, never commit ──
 uploads/
 **/uploads/

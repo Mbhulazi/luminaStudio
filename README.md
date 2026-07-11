@@ -58,6 +58,13 @@ Render/Railway, frontend on Vercel, and **live PayFast setup** (including the
 Production env template: [`lumina-backend/.env.production`](./lumina-backend/.env.production)
 (not committed once you fill in real secrets — it's gitignored).
 
+## Secrets management
+
+Production secrets are managed in **[Doppler](https://www.doppler.com)** and
+auto-synced into Render (backend) and Vercel (frontend). No plaintext file
+holds a real secret. The setup runbook, rotation procedures, and the
+"what done looks like" checklist are in **[SECRETS.md](./SECRETS.md)**.
+
 ## Project structure
 
 ```
