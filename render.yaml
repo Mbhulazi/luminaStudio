@@ -25,7 +25,7 @@ services:
     # nodeVersion: 20.x
     # Build: install deps, generate the Prisma client, and install the Doppler
     # CLI (used by startCommand to fetch secrets at boot).
-    buildCommand: npm install && npx prisma generate && (curl -Ls https://doppler.com/install.sh | sh)
+    buildCommand: npm install && npx prisma generate && curl -Ls https://doppler.com/install.sh | sh
     startCommand: doppler run --token "$DOPPLER_TOKEN" --project lummina-studio --config prd -- node src/server.js
     healthCheckPath: /ready
     autoDeploy: true
