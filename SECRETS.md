@@ -66,10 +66,10 @@ You only do this once. After it's set up, the flow is automatic.
 
 1. Sign up / log in at **https://dashboard.doppler.com**.
 2. **Projects → New Project** → name it `lummina-studio`.
-3. Inside the project, you'll have environments. Confirm there's a **Production**
-   environment with a config (Doppler names it `prd` or `prod` by default).
-   The names in `lumina-backend/doppler.json` assume a config called `prod`;
-   rename it there if Doppler uses a different name.
+3. Inside the project, Doppler creates three environments by default:
+   **Development** (config `dev`), **Staging** (config `stg`), and
+   **Production** (config **`prd`** — note the name; it's `prd`, not `prod`).
+   All commands below use `--config prd`.
 4. **Settings → Integrations → Render** → connect. (Doppler walks you through
    OAuth into Render.) Repeat for **Vercel** if you want the frontend synced
    too.
@@ -104,12 +104,12 @@ below — rotate in this order:
 3. PayFast merchant key + passphrase
 
 Update each rotated value in Doppler (dashboard or
-`doppler secrets set JWT_SECRET=<new-value>`).
+`doppler secrets set JWT_SECRET=<new-value> --project lummina-studio --config prd`).
 
 ### 4. Scrub the local files
 
 ```bash
-./scripts/scrub-secrets.sh lumina-backend/.env.production
+./scripts/scrub-secrets.sh lummina-backend/.env.production
 ./scripts/scrub-secrets.sh lumina-backend/.env
 ```
 
@@ -119,8 +119,8 @@ delete the backup.**
 
 ### 5. Wire Render to Doppler
 
-1. Doppler dashboard → **lummina-studio → prod config → Integrations → Render**.
-2. Select the `lummina-backend` Render service and the `prod` config.
+1. Doppler dashboard → **lummina-studio → prd config → Integrations → Render**.
+2. Select the `lummina-backend` Render service and the `prd` config.
 3. Doppler pushes every secret into Render's env-var store automatically, and
    keeps them in sync on every change.
 4. On Render: **Manual Deploy → Deploy latest commit**. The app boots with
@@ -130,8 +130,8 @@ delete the backup.**
 
 The frontend only needs one var: `NEXT_PUBLIC_API_URL`.
 
-1. Doppler → **prod config → Integrations → Vercel** → connect.
-2. Add `NEXT_PUBLIC_API_URL` to the `prod` config in Doppler (it's a public
+1. Doppler → **prd config → Integrations → Vercel** → connect.
+2. Add `NEXT_PUBLIC_API_URL` to the `prd` config in Doppler (it's a public
    URL, not a secret, but keeping it in Doppler means one place to change it).
 3. Doppler syncs it into Vercel automatically.
 
@@ -167,7 +167,7 @@ the value in Doppler.
    `@` → `%40`. A password with `%` in it must become `%25`.
 3. Update Doppler:
    ```bash
-   doppler secrets set DATABASE_URL='<new-encoded-string>' --config prod
+   doppler secrets set DATABASE_URL='<new-encoded-string>' --project lummina-studio --config prd
    ```
 4. Doppler auto-syncs to Render. Redeploy the backend. Verify `/ready`
    returns `{"ok":true,"db":true}`.
@@ -182,7 +182,7 @@ the value in Doppler.
    ```
 2. Update Doppler:
    ```bash
-   doppler secrets set JWT_SECRET='<new-hex-string>' --config prod
+   doppler secrets set JWT_SECRET='<new-hex-string>' --project lummina-studio --config prd
    ```
 3. **Effect:** every outstanding JWT becomes invalid — all users get logged
    out and must sign in again. This is expected and unavoidable when rotating
@@ -201,8 +201,8 @@ the value in Doppler.
      rotate the key — the passphrase alone is a meaningful rotation.)
 2. Update Doppler:
    ```bash
-   doppler secrets set PAYFAST_PASSPHRASE='<new-passphrase>' --config prod
-   doppler secrets set PAYFAST_MERCHANT_KEY='<new-key>'      --config prod
+   doppler secrets set PAYFAST_PASSPHRASE='<new-passphrase>' --project lummina-studio --config prd
+   doppler secrets set PAYFAST_MERCHANT_KEY='<new-key>'      --project lummina-studio --config prd
    ```
 3. Redeploy the backend.
 4. **Verify with a sandbox transaction** before trusting live payments again:
@@ -216,7 +216,7 @@ the value in Doppler.
 1. Add the name to `lumina-backend/doppler.json` (with type + rotate hint).
 2. Set the value:
    ```bash
-   doppler secrets set NEW_KEY='<value>' --config prod
+   doppler secrets set NEW_KEY='<value>' --project lummina-studio --config prd
    ```
 3. Doppler syncs to Render/Vercel automatically. Redeploy if the backend
    needs it at boot (most do).
