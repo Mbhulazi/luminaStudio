@@ -18,6 +18,18 @@ const analysisRoutes = require('./routes/analysis.routes');
 const app = express();
 
 // ---------------------------------------------------------------------------
+// trust proxy — behind Render/Railway's reverse proxy, the socket peer is the
+// proxy, not the client. express-rate-limit derives its per-client key from
+// req.ip, which is wrong (one shared IP for everyone) without this. Setting it
+// to 1 means "trust the first hop's X-Forwarded-For" — correct for a single
+// proxy layer. Without it, the auth/email/checkout limiters either mis-fire or
+// funnel every user into one shared bucket, and express-rate-limit logs a
+// warning on every proxied request.
+//   - `app.set('trust proxy', 1)` : one proxy hop (Render/Railway/Vercel)
+//   - Behind multiple hops, bump the count or set a specific IP range.
+app.set('trust proxy', 1);
+
+// ---------------------------------------------------------------------------
 // Security headers
 // ---------------------------------------------------------------------------
 app.use(helmet({ contentSecurityPolicy: false })); // CSP set at CDN/host level
