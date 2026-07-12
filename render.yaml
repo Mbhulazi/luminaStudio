@@ -5,10 +5,9 @@
 #   1. Push this file (it lives at the repo root so Render can find it).
 #   2. Render → New → Blueprint → pick this repo. Render reads this file and
 #      creates the service for you — no manual form-filling.
-#   3. SECRETS: secrets are managed in Doppler (see SECRETS.md). The backend
-#      fetches them at boot via `doppler run`. The ONLY secret you set directly
-#      on Render is DOPPLER_TOKEN (a Doppler service token for the prd config).
-#      Never put real secrets in this committed file.
+#   3. SECRETS: set each secret directly in Render → Environment tab. Source
+#      the values from Doppler (see SECRETS.md). Keep them in sync manually
+#      or via the Doppler→Render integration. Never commit real secrets.
 #
 # This defines ONLY the backend. The frontend deploys to Vercel separately.
 
@@ -23,15 +22,56 @@ services:
     # Node 18+ is required (package.json engines). Render honours .nvmrc /
     # package.json engines automatically; pin explicitly if you prefer:
     # nodeVersion: 20.x
-    # Build: install deps, generate the Prisma client, and install the Doppler
-    # CLI (used by startCommand to fetch secrets at boot).
-    buildCommand: npm install && npx prisma generate && curl -Ls https://doppler.com/install.sh | sh
-    startCommand: doppler run --token "$DOPPLER_TOKEN" --project lummina-studio --config prd -- node src/server.js
+    # Build: install deps and generate the Prisma client.
+    buildCommand: npm install && npx prisma generate
+    startCommand: node src/server.js
     healthCheckPath: /ready
     autoDeploy: true
     # ── Environment variables ──
-    # Only DOPPLER_TOKEN is set on Render directly. Everything else comes from
-    # Doppler at boot via `doppler run`. Never put real secrets here.
+    # Set these in Render → Environment (sourced from Doppler prd config).
+    # Listed here as sync:false so Render doesn't try to fill them from the repo.
     envVars:
-      - key: DOPPLER_TOKEN
-        sync: false            # SECRET: the Doppler service token for prd config
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGIN
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: BCRYPT_SALT_ROUNDS
+        value: "12"
+      - key: PAYFAST_MODE
+        sync: false
+      - key: PAYFAST_MERCHANT_ID
+        sync: false
+      - key: PAYFAST_MERCHANT_KEY
+        sync: false
+      - key: PAYFAST_PASSPHRASE
+        sync: false
+      - key: PAYFAST_NOTIFY_URL
+        sync: false
+      - key: PAYFAST_RETURN_URL
+        sync: false
+      - key: PAYFAST_CANCEL_URL
+        sync: false
+      - key: EMAIL_DRIVER
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: STORAGE_DRIVER
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: portraits
+      - key: LLM_DRIVER
+        value: template
