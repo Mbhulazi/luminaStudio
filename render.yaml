@@ -3,11 +3,10 @@
 #
 # HOW TO USE:
 #   1. Push this file (it lives at the repo root so Render can find it).
-#   2. Render → New → Blueprint → pick this repo. Render reads this file and
-#      creates the service for you — no manual form-filling.
-#   3. SECRETS: set each secret directly in Render → Environment tab. Source
-#      the values from Doppler (see SECRETS.md). Keep them in sync manually
-#      or via the Doppler→Render integration. Never commit real secrets.
+#   2. Render → New → Blueprint → pick this repo. Render reads this file.
+#   3. Non-secret config is hardcoded below (NODE_ENV, URLs, driver choices).
+#      Actual secrets (DATABASE_URL, JWT_SECRET, PayFast creds) are sync:false
+#      and MUST be set in Render → Environment tab.
 #
 # This defines ONLY the backend. The frontend deploys to Vercel separately.
 
@@ -15,35 +14,61 @@ services:
   - type: web
     name: lummina-backend
     runtime: node
-    # Render checks out the WHOLE repo; run the backend from its subfolder.
     rootDir: lumina-backend
-    plan: free                 # bump to starter when you go live (sleeps on free)
-    region: oregon             # change to frankfurt/singapore if closer to your users
-    # Node 18+ is required (package.json engines). Render honours .nvmrc /
-    # package.json engines automatically; pin explicitly if you prefer:
-    # nodeVersion: 20.x
-    # Build: install deps and generate the Prisma client.
+    plan: free
+    region: oregon
     buildCommand: npm install && npx prisma generate
     startCommand: node src/server.js
     healthCheckPath: /ready
     autoDeploy: true
-    # ── Environment variables ──
-    # Set these in Render → Environment (sourced from Doppler prd config).
-    # Listed here as sync:false so Render doesn't try to fill them from the repo.
     envVars:
+      # ── Non-secret config (committed) ──
       - key: NODE_ENV
         value: production
       - key: CORS_ORIGIN
-        sync: false
+        value: "https://lumminastudio.com,https://www.lumminastudio.com"
       - key: APP_BASE_URL
-        sync: false
+        value: "https://lumminastudio.com"
+      - key: PORT
+        value: "4000"
+      - key: BCRYPT_SALT_ROUNDS
+        value: "12"
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: LOG_LEVEL
+        value: "info"
+      - key: STORAGE_DRIVER
+        value: supabase
+      - key: SUPABASE_STORAGE_BUCKET
+        value: portraits
+      - key: LLM_DRIVER
+        value: template
+      - key: LLM_MAX_COST_CENTS
+        value: "50"
+      - key: USD_TO_ZAR_FALLBACK_RATE
+        value: "18.50"
+      - key: EMAIL_DRIVER
+        value: smtp
+      - key: EMAIL_FROM_NAME
+        value: "Lummina Studio"
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: PAYFAST_MODE
+        value: live
+      - key: PAYFAST_IP_TTL_MS
+        value: "21600000"
+      - key: PAYFAST_NOTIFY_URL
+        value: "https://lummina-backend.onrender.com/api/payments/payfast/itn"
+      - key: PAYFAST_RETURN_URL
+        value: "https://lumminastudio.com/checkout?status=success"
+      - key: PAYFAST_CANCEL_URL
+        value: "https://lumminastudio.com/checkout?status=cancelled"
+      # ── Secrets (set these in Render → Environment tab) ──
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
-        sync: false
-      - key: BCRYPT_SALT_ROUNDS
-        value: "12"
-      - key: PAYFAST_MODE
         sync: false
       - key: PAYFAST_MERCHANT_ID
         sync: false
@@ -51,13 +76,9 @@ services:
         sync: false
       - key: PAYFAST_PASSPHRASE
         sync: false
-      - key: PAYFAST_NOTIFY_URL
+      - key: SUPABASE_URL
         sync: false
-      - key: PAYFAST_RETURN_URL
-        sync: false
-      - key: PAYFAST_CANCEL_URL
-        sync: false
-      - key: EMAIL_DRIVER
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: SMTP_HOST
         sync: false
@@ -65,13 +86,3 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
-      - key: STORAGE_DRIVER
-        value: supabase
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_STORAGE_BUCKET
-        value: portraits
-      - key: LLM_DRIVER
-        value: template
