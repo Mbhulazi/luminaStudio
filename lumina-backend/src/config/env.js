@@ -26,7 +26,10 @@ const corsOrigins = (process.env.CORS_ORIGIN || '')
 if (isProduction && corsOrigins.length === 0) {
   throw new Error(
     'CORS_ORIGIN must be set to one or more frontend origins in production. ' +
-      'Refusing to start with an open CORS policy + credentials.'
+      'Refusing to start with an open CORS policy + credentials. ' +
+      `(debug: NODE_ENV=${JSON.stringify(process.env.NODE_ENV)}, ` +
+      `CORS_ORIGIN=${JSON.stringify(process.env.CORS_ORIGIN)}, ` +
+      `raw keys containing CORS: ${Object.keys(process.env).filter(k => k.includes('CORS')).join(',') || '(none)'})`
   );
 }
 
