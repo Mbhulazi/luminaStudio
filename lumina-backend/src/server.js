@@ -102,8 +102,17 @@ app.get('/ready', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ ok: true, db: true });
-  } catch {
-    res.status(503).json({ ok: false, db: false });
+  } catch (err) {
+    // Include the actual error so /ready tells us WHY the DB is unreachable,
+    // instead of just a bare 503. (Safe to expose in the response body because
+    // this is a connectivity check, not user data — the message is a Prisma
+    // error string, not a secret.)
+    res.status(503).json({
+      ok: false,
+      db: false,
+      error: err.message,
+      code: err.code || null,
+    });
   }
 });
 
