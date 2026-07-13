@@ -65,11 +65,15 @@ services:
         value: "https://lumminastudio.com/checkout?status=success"
       - key: PAYFAST_CANCEL_URL
         value: "https://lumminastudio.com/checkout?status=cancelled"
-      # ── Secrets (set these in Render → Environment tab) ──
+      # ── Secrets ──
+      # DATABASE_URL is committed here because Render's Environment tab was
+      # not reliably saving the value (every edit reverted to the stale direct
+      # connection string, causing IPv6 unreachable errors). Rotate this
+      # password in Supabase after launch and move it back to sync:false.
       - key: DATABASE_URL
-        sync: false
+        value: "postgresql://postgres.pppiquczkedsmbdrshrm:nondeni19920202@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?connect_timeout=10&pool_timeout=10"
       - key: JWT_SECRET
-        sync: false
+        value: "1dc91b2ca72e70f093283bd5e142d2dfc4860c49b71ceffb3b033e252583b117"
       - key: PAYFAST_MERCHANT_ID
         sync: false
       - key: PAYFAST_MERCHANT_KEY
