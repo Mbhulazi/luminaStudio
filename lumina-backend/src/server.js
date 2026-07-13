@@ -103,21 +103,9 @@ app.get('/ready', async (_req, res) => {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ ok: true, db: true });
   } catch (err) {
-    // Log the full error to stdout so it shows up in Render → Logs.
-    // This is the only reliable way to see the DB error (the browser shows
-    // Render's splash page instead of the JSON body when the health check fails).
-    console.error('[/ready] DB CHECK FAILED:', JSON.stringify({
-      message: err.message,
-      code: err.code || null,
-      // Show the host we're trying to reach (password masked) for diagnosis
-      dbHost: (process.env.DATABASE_URL || '').replace(/:[^:@]+@/, ':***@'),
-    }));
-    res.status(503).json({
-      ok: false,
-      db: false,
-      error: err.message,
-      code: err.code || null,
-    });
+    // Log the error server-side for debugging; return a concise 503.
+    logger.error({ code: err.code, message: err.message }, '/ready DB check failed');
+    res.status(503).json({ ok: false, db: false });
   }
 });
 
@@ -142,14 +130,5 @@ module.exports = app;
 if (require.main === module) {
   app.listen(env.port, () => {
     logger.info({ port: env.port, env: env.nodeEnv }, 'Lummina backend listening');
-    // Boot-time DB connectivity check — logs the result (and error if any)
-    // to Render → Logs so we can diagnose connection failures even when the
-    // browser shows Render's splash page instead of the JSON body.
-    prisma.$queryRaw`SELECT 1`
-      .then(() => logger.info('Boot DB check: OK'))
-      .catch((err) => logger.error(
-        { message: err.message, code: err.code },
-        'Boot DB check: FAILED'
-      ));
   });
 }
