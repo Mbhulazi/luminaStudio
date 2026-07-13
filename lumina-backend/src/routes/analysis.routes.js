@@ -96,7 +96,8 @@ router.post('/', requireAuth, validateBody(createSchema), async (req, res, next)
     try {
       imageBuffer = await storage.getImageBytes(uploadId);
     } catch (err) {
-      return res.status(404).json({ error: 'Source image not found. It may have expired.' });
+      logger.error({ err: err.message, uploadId }, 'Analysis: getImageBytes failed');
+      return res.status(404).json({ error: `Source image not found. It may have expired. (${err.message})` });
     }
 
     // --- Run CV (deterministic, always succeeds for valid images) ---------
@@ -107,7 +108,8 @@ router.post('/', requireAuth, validateBody(createSchema), async (req, res, next)
       if (err instanceof ImageLoadError) {
         return res.status(400).json({ error: err.publicMessage });
       }
-      throw err;
+      logger.error({ err: err.message, stack: err.stack }, 'Analysis: runCV failed');
+      return res.status(500).json({ error: `Image analysis failed: ${err.message}` });
     }
 
     // --- Create the pending Analysis row ----------------------------------
