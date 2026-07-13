@@ -2,7 +2,15 @@
 // Run `npx prisma migrate dev --name init` after setting DATABASE_URL in .env
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Render/Debian use a different libssl than dev machines. Listing both
+  // targets means `prisma generate` produces engines that load on either,
+  // so the binary works in production without a separate generate step.
+  //   - native           : for local dev (Windows/macOS/Linux dev box)
+  //   - debian-openssl-3.0.x : Render's Debian 12 runtime (libssl3)
+  // If you deploy to a different host (e.g. Railway on Ubuntu), add that
+  // target too. See https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#binarytargets
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
