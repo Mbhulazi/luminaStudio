@@ -26,9 +26,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: CORS_ORIGIN
-        value: "https://lumminastudio.com,https://www.lumminastudio.com"
+        value: "https://lumminastudio.com,https://www.lumminastudio.com,https://app-weld-nine-24.vercel.app"
       - key: APP_BASE_URL
-        value: "https://lumminastudio.com"
+        value: "https://app-weld-nine-24.vercel.app"
       - key: PORT
         value: "4000"
       - key: BCRYPT_SALT_ROUNDS
@@ -56,15 +56,15 @@ services:
       - key: SMTP_SECURE
         value: "false"
       - key: PAYFAST_MODE
-        value: live
+        value: sandbox
       - key: PAYFAST_IP_TTL_MS
         value: "21600000"
       - key: PAYFAST_NOTIFY_URL
         value: "https://lummina-backend.onrender.com/api/payments/payfast/itn"
       - key: PAYFAST_RETURN_URL
-        value: "https://lumminastudio.com/checkout?status=success"
+        value: "https://app-weld-nine-24.vercel.app/checkout?status=success"
       - key: PAYFAST_CANCEL_URL
-        value: "https://lumminastudio.com/checkout?status=cancelled"
+        value: "https://app-weld-nine-24.vercel.app/checkout?status=cancelled"
       # ── Secrets ──
       # sync: false means Render's Blueprint sync will NOT override values you
       # set manually in the dashboard Environment tab. Set these once in
